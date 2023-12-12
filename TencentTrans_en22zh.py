@@ -1,3 +1,5 @@
+# Modify from https://github.com/LexsionLee/tencent-translate-for-goldendict. See https://sharegpt.com/c/t8Fb0HC and https://sharegpt.com/c/e7cmAFb.
+
 import json
 import unicodedata
 from tencentcloud.common import credential
