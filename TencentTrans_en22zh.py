@@ -1,4 +1,9 @@
-# Modify from https://github.com/LexsionLee/tencent-translate-for-goldendict. See https://sharegpt.com/c/t8Fb0HC and https://sharegpt.com/c/e7cmAFb.
+# Modify from https://github.com/LexsionLee/tencent-translate-for-goldendict
+# Use with `python .py YourInput` for translate multi-language to Chinese, supported languages list on https://cloud.tencent.com/document/api/551/15620. And translate Chinese to English.
+# Write by GPT-3.5 🧙, scillidan 🤡. See
+# https://sharegpt.com/c/t8Fb0HC
+# https://sharegpt.com/c/e7cmAFb
+# https://sharegpt.com/c/wXz7J6u
 
 import json
 import unicodedata
@@ -7,11 +12,12 @@ from tencentcloud.common.profile.client_profile import ClientProfile
 from tencentcloud.common.profile.http_profile import HttpProfile
 from tencentcloud.common.exception.tencent_cloud_sdk_exception import TencentCloudSDKException
 from tencentcloud.tmt.v20180321 import tmt_client, models
-
 import argparse
 import textwrap
+import langid
 
-SecretId = "" # Add your api-key here.
+# Add your api-key here.
+SecretId = ""
 SecretKey = ""
 
 def get_args():
@@ -19,14 +25,15 @@ def get_args():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=textwrap.dedent('''\
             '''))
-    parser.add_argument('qText',metavar='Text', type=str, default='', help='Original text for query.')
+    parser.add_argument('qText', metavar='Text', type=str, default='', help='Original text for query.')
     return parser.parse_args()
 
-def contains_chinese(text):
-    for char in text:
-        if 'CJK' in unicodedata.name(char):
-            return True
-    return False
+def get_language_code(text):
+    try:
+        detected_lang = langid.classify(text)
+        return detected_lang[0]
+    except:
+        return None
 
 def translate_text(source_text, source_lang, target_lang):
     try:
@@ -52,29 +59,28 @@ def translate_text(source_text, source_lang, target_lang):
 
         dictResp = json.loads(resp.to_json_string())
 
-        return dictResp['TargetText']
+        return dictResp['TargetText'], target_lang
 
     except TencentCloudSDKException as err:
         print(err)
-        return None
+        return None, None
 
 args = get_args()
 source_text = args.qText
 
-if contains_chinese(source_text):
+source_lang = get_language_code(source_text)
+
+if source_lang == 'zh':
     # Input is Chinese
-    translated_text_zh_to_en = translate_text(source_text, "zh", "en")
-    if translated_text_zh_to_en is not None:
-        print("")
-        print(translated_text_zh_to_en)
-        print()
+    translated_text, target_lang = translate_text(source_text, "zh", "en")
 else:
-    # Input is English
-    translated_text_en_to_zh = translate_text(source_text, "en", "zh")
-    if translated_text_en_to_zh is not None:
-        print("")
-        print(translated_text_en_to_zh)
-        print()
+    # Input is not Chinese
+    translated_text, target_lang = translate_text(source_text, source_lang, "zh")
+
+if translated_text is not None:
+    print("")
+    print(translated_text)
+    print("")
 
 print("")
 print(source_text)
